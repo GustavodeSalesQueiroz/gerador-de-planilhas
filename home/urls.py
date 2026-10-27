@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+# Mapeia a interface, as APIs de planilhas/conversas e as rotas de exportação.
 urlpatterns = [
     path("", views.home, name="home"),
     path("api/roteiro/", views.roteiro_chatbot, name="roteiro_chatbot"),

@@ -28,6 +28,7 @@ MESSAGES = [
 
 
 def add_messages(apps, schema_editor):
+    """Carrega mensagens utilizadas no fluxo de criar, editar e baixar planilhas."""
     MensagemBot = apps.get_model("home", "MensagemBot")
     MensagemBot.objects.bulk_create(
         [MensagemBot(chave=chave, texto=texto) for chave, texto in MESSAGES],
@@ -42,5 +43,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Adiciona mensagens do fluxo sem sobrescrever textos já cadastrados.
         migrations.RunPython(add_messages, migrations.RunPython.noop),
     ]

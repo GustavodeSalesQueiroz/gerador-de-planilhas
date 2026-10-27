@@ -13,4 +13,5 @@ from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerador_planilhas.settings')
 
+# Expõe a aplicação WSGI para servidores web compatíveis.
 application = get_wsgi_application()

@@ -5,7 +5,7 @@ import sys
 
 
 def main():
-    """Run administrative tasks."""
+    """Prepara as configurações Django e executa o comando solicitado."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerador_planilhas.settings')
     try:
         from django.core.management import execute_from_command_line
@@ -19,4 +19,5 @@ def main():
 
 
 if __name__ == '__main__':
+    # Executa a CLI somente quando este arquivo é chamado diretamente.
     main()

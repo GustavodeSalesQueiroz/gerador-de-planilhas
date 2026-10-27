@@ -11,6 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Cria a tabela inicial de usuários definida no primeiro modelo do app.
         migrations.CreateModel(
             name='usuarios',
             fields=[

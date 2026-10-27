@@ -9,7 +9,10 @@ from .models import Planilha, RegistroConversa, TemaBot
 
 
 class ChatbotTests(TestCase):
+    """Valida o fluxo do chatbot, as APIs e a exportação de planilhas."""
+
     def setUp(self):
+        """Prepara tema e respostas reutilizados nos cenários de teste."""
         self.event_theme = TemaBot.objects.get(codigo="evento")
         self.event_answers = {
             "nome_evento": "Feira Geek",
@@ -19,6 +22,7 @@ class ChatbotTests(TestCase):
         }
 
     def post_conversation(self, theme="evento", answers=None):
+        """Envia respostas JSON ao endpoint de criação de conversa."""
         return self.client.post(
             reverse("criar_conversa"),
             data=json.dumps({"tema": theme, "respostas": answers or self.event_answers}),
@@ -26,6 +30,7 @@ class ChatbotTests(TestCase):
         )
 
     def create_sheet(self, name="Feira de novembro", answers=None):
+        """Cria planilha de eventos com o nome e as respostas fornecidos."""
         return self.client.post(
             reverse("criar_planilha"),
             data=json.dumps({
@@ -37,6 +42,7 @@ class ChatbotTests(TestCase):
         )
 
     def test_home_shows_chatbot_and_recent_records(self):
+        """Confirma que a página inicial apresenta o chatbot e sua configuração."""
         response = self.client.get(reverse("home"))
 
         self.assertEqual(response.status_code, 200)
@@ -44,6 +50,7 @@ class ChatbotTests(TestCase):
         self.assertContains(response, "chatbot-config")
 
     def test_script_returns_questions_messages_and_event_theme_from_database(self):
+        """Verifica que o roteiro da API contém temas, perguntas e mensagens."""
         response = self.client.get(reverse("roteiro_chatbot"))
 
         self.assertEqual(response.status_code, 200)
@@ -57,6 +64,7 @@ class ChatbotTests(TestCase):
         })
 
     def test_script_reflects_question_edited_in_database(self):
+        """Garante que alterações de perguntas no banco aparecem no roteiro."""
         question = self.event_theme.perguntas.get(campo="nome_evento")
         question.pergunta = "Como se chama o evento?"
         question.save()
@@ -67,6 +75,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(event["perguntas"][0]["pergunta"], "Como se chama o evento?")
 
     def test_saves_valid_conversation_and_returns_download_link(self):
+        """Confirma o salvamento válido e o endereço para baixar a planilha."""
         response = self.post_conversation()
 
         self.assertEqual(response.status_code, 201)
@@ -77,6 +86,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(response.json()["download_url"], "/planilhas/evento/baixar/")
 
     def test_rejects_missing_answer(self):
+        """Impede salvar uma conversa quando um campo obrigatório está vazio."""
         answers = self.event_answers.copy()
         answers["local"] = ""
 
@@ -87,6 +97,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(RegistroConversa.objects.count(), 0)
 
     def test_rejects_invalid_date_number_and_choice(self):
+        """Rejeita datas, números e opções que não respeitam o tema."""
         invalid_answers = [
             {**self.event_answers, "data_evento": "not-a-date"},
             {**self.event_answers, "status": "Não existe"},
@@ -109,6 +120,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(RegistroConversa.objects.count(), 0)
 
     def test_rejects_extra_answer_fields_and_malformed_json(self):
+        """Rejeita campos extras e corpos que não podem ser lidos como JSON."""
         answers = {**self.event_answers, "unexpected": "value"}
         response = self.post_conversation(answers=answers)
         self.assertEqual(response.status_code, 400)
@@ -122,6 +134,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(RegistroConversa.objects.count(), 0)
 
     def test_rejects_inactive_or_unknown_theme_with_json_error(self):
+        """Retorna erro JSON quando o tema não existe ou está indisponível."""
         response = self.post_conversation(theme="tema-inexistente")
 
         self.assertEqual(response.status_code, 404)
@@ -129,6 +142,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(RegistroConversa.objects.count(), 0)
 
     def test_downloads_excel_file_with_typed_columns_and_theme_records(self):
+        """Verifica conteúdo, formatos de dados e segurança do Excel gerado."""
         self.post_conversation()
         self.post_conversation(answers={
             **self.event_answers,
@@ -153,6 +167,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(sheet["A1"].value, "Data do registro")
 
     def test_download_contains_only_records_for_selected_theme(self):
+        """Mantém a exportação de cada tema isolada dos demais registros."""
         self.post_conversation()
         products = TemaBot.objects.get(codigo="produto")
         RegistroConversa.objects.create(
@@ -167,6 +182,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(workbook.active.max_row, 2)
 
     def test_sales_workbook_contains_numeric_values(self):
+        """Confirma que valores numéricos de vendas são exportados como números."""
         answers = {
             "produto": "Miniatura",
             "quantidade": "2",
@@ -185,6 +201,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(sheet["D2"].data_type, "n")
 
     def test_rejects_request_without_csrf_token(self):
+        """Garante que o endpoint de gravação exige um token CSRF válido."""
         client = Client(enforce_csrf_checks=True)
         client.get(reverse("home"))
 
@@ -198,6 +215,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(RegistroConversa.objects.count(), 0)
 
     def test_creates_a_named_spreadsheet_with_first_record(self):
+        """Cria uma planilha nomeada e associa a ela o primeiro registro."""
         response = self.create_sheet()
 
         self.assertEqual(response.status_code, 201)
@@ -211,6 +229,7 @@ class ChatbotTests(TestCase):
         )
 
     def test_adds_multiple_records_to_one_spreadsheet_and_exports_them_together(self):
+        """Agrupa vários registros na mesma planilha e exporta todos juntos."""
         created = self.create_sheet()
         sheet_id = created.json()["planilha"]["id"]
         second_answers = {
@@ -235,6 +254,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(workbook.active["B3"].value, "Encontro de colecionadores")
 
     def test_edits_an_existing_record_and_download_contains_updated_value(self):
+        """Atualiza um registro existente e reflete a mudança no Excel."""
         created = self.create_sheet()
         sheet_id = created.json()["planilha"]["id"]
         record_id = created.json()["registro"]["id"]
@@ -262,6 +282,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(workbook.active["B2"].value, "Feira Geek Atualizada")
 
     def test_separate_spreadsheets_keep_records_isolated(self):
+        """Evita que registros de planilhas diferentes sejam misturados."""
         first = self.create_sheet("Primeiro evento")
         second = self.create_sheet(
             "Segundo evento",
@@ -278,6 +299,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(workbook.active["B2"].value, "Feira Geek")
 
     def test_existing_spreadsheet_list_and_detail_include_rows(self):
+        """Retorna metadados, perguntas e linhas ao listar ou detalhar planilhas."""
         created = self.create_sheet()
         sheet_id = created.json()["planilha"]["id"]
 
@@ -291,6 +313,7 @@ class ChatbotTests(TestCase):
         self.assertEqual(detail.json()["perguntas"][0]["campo"], "nome_evento")
 
     def test_rejects_invalid_spreadsheet_name_and_invalid_update(self):
+        """Rejeita nomes inválidos e atualizações com respostas fora das regras."""
         invalid_name = self.create_sheet("   ")
         too_long_name = self.create_sheet("x" * 101)
 
@@ -314,11 +337,13 @@ class ChatbotTests(TestCase):
         )
 
     def test_script_and_conversation_endpoints_only_accept_expected_methods(self):
+        """Restringe leitura do roteiro e gravação de conversa aos métodos válidos."""
         self.assertEqual(self.client.post(reverse("roteiro_chatbot")).status_code, 405)
         self.assertEqual(self.client.get(reverse("criar_conversa")).status_code, 405)
         self.assertEqual(self.client.get(reverse("criar_planilha")).status_code, 405)
 
     def test_collection_and_record_endpoints_reject_wrong_write_method(self):
+        """Diferencia POST para adicionar e PATCH para editar registros."""
         created = self.create_sheet()
         sheet_id = created.json()["planilha"]["id"]
         record_id = created.json()["registro"]["id"]

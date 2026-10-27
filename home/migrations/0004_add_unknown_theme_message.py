@@ -2,6 +2,7 @@ from django.db import migrations
 
 
 def add_unknown_theme_message(apps, schema_editor):
+    """Registra a mensagem usada quando a API recebe um tema inválido."""
     MensagemBot = apps.get_model("home", "MensagemBot")
     MensagemBot.objects.get_or_create(
         chave="erro_tema",
@@ -16,5 +17,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Insere a mensagem inicial sem duplicá-la ao aplicar a migração.
         migrations.RunPython(add_unknown_theme_message, migrations.RunPython.noop),
     ]

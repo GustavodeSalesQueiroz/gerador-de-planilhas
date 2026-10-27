@@ -5,6 +5,7 @@ from django.db import migrations, models
 
 
 def seed_chatbot(apps, schema_editor):
+    """Insere temas, perguntas e mensagens iniciais no banco."""
     TemaBot = apps.get_model("home", "TemaBot")
     PerguntaBot = apps.get_model("home", "PerguntaBot")
     MensagemBot = apps.get_model("home", "MensagemBot")
@@ -93,6 +94,7 @@ def seed_chatbot(apps, schema_editor):
 
 
 def unseed_chatbot(apps, schema_editor):
+    """Remove os dados do chatbot caso a migração seja revertida."""
     apps.get_model("home", "RegistroConversa").objects.all().delete()
     apps.get_model("home", "MensagemBot").objects.all().delete()
     apps.get_model("home", "TemaBot").objects.all().delete()
@@ -105,6 +107,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Cria o catálogo de textos apresentados pelo chatbot.
         migrations.CreateModel(
             name='MensagemBot',
             fields=[
@@ -113,6 +116,7 @@ class Migration(migrations.Migration):
                 ('texto', models.CharField(max_length=300)),
             ],
         ),
+        # Cria os temas e sua ordenação na interface.
         migrations.CreateModel(
             name='TemaBot',
             fields=[
@@ -129,11 +133,13 @@ class Migration(migrations.Migration):
                 'ordering': ['ordem', 'nome'],
             },
         ),
+        # Inclui eventos entre as categorias operacionais permitidas.
         migrations.AlterField(
             model_name='registrooperacional',
             name='categoria',
             field=models.CharField(choices=[('pedido', 'Pedido'), ('venda', 'Venda'), ('produto', 'Produto'), ('estoque', 'Estoque'), ('evento', 'Evento')], max_length=20),
         ),
+        # Armazena as respostas de cada conversa associadas a um tema.
         migrations.CreateModel(
             name='RegistroConversa',
             fields=[

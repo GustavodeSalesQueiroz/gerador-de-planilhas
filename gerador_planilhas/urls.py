@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 
+# Encaminha a administração do Django e delega as demais rotas ao app home.
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("home.urls")),

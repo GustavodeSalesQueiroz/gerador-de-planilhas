@@ -20,6 +20,7 @@ from .models import MensagemBot, Planilha, RegistroConversa, RegistroOperacional
 
 
 def home(request):
+    """Monta o histórico recente e entrega ao template as URLs da API."""
     planilhas = Planilha.objects.select_related("tema").annotate(
         total_registros=Count("registros"),
     )[:10]
@@ -58,6 +59,7 @@ def home(request):
 
 @require_GET
 def roteiro_chatbot(request):
+    """Expõe temas, perguntas e mensagens cadastrados para o frontend."""
     temas = TemaBot.objects.filter(ativo=True).prefetch_related("perguntas")
     mensagens = dict(MensagemBot.objects.values_list("chave", "texto"))
     roteiro = [
@@ -82,10 +84,12 @@ def roteiro_chatbot(request):
 
 
 def texto_bot(chave):
+    """Retorna o texto configurado no banco para a chave informada."""
     return MensagemBot.objects.get(chave=chave).texto
 
 
 def ler_json(request):
+    """Decodifica o corpo JSON e responde com erro quando o formato é inválido."""
     try:
         dados = json.loads(request.body)
     except (json.JSONDecodeError, UnicodeDecodeError):
@@ -96,6 +100,7 @@ def ler_json(request):
 
 
 def validar_respostas(tema, respostas):
+    """Confere campos e valores segundo as perguntas cadastradas para o tema."""
     perguntas = list(tema.perguntas.all())
     campos_esperados = {pergunta.campo for pergunta in perguntas}
     if set(respostas) != campos_esperados:
@@ -138,6 +143,7 @@ def validar_respostas(tema, respostas):
 
 
 def resumo_registro(tema, respostas):
+    """Cria um resumo legível usando os cabeçalhos das perguntas do tema."""
     perguntas = {pergunta.campo: pergunta for pergunta in tema.perguntas.all()}
     return " · ".join(
         f"{perguntas[campo].cabecalho}: {valor}"
@@ -147,6 +153,7 @@ def resumo_registro(tema, respostas):
 
 
 def serializar_registro(registro):
+    """Converte um registro salvo para o formato usado pelas respostas da API."""
     return {
         "id": registro.pk,
         "planilha_id": registro.planilha_id,
@@ -157,6 +164,7 @@ def serializar_registro(registro):
 
 
 def serializar_planilha(planilha):
+    """Converte uma planilha e seus metadados para o formato da API."""
     return {
         "id": planilha.pk,
         "nome": planilha.nome,
@@ -169,6 +177,7 @@ def serializar_planilha(planilha):
 
 
 def resposta_salva(planilha, registro, mensagem_chave, status=200):
+    """Atualiza a data da planilha e monta a resposta comum de salvamento."""
     planilha.atualizada_em = timezone.now()
     planilha.save(update_fields=["atualizada_em"])
     return JsonResponse(
@@ -189,6 +198,7 @@ def resposta_salva(planilha, registro, mensagem_chave, status=200):
 
 @require_GET
 def listar_planilhas(request):
+    """Lista planilhas com o tema e a quantidade atual de registros."""
     planilhas = Planilha.objects.select_related("tema").annotate(
         total_registros=Count("registros"),
     )
@@ -205,6 +215,7 @@ def listar_planilhas(request):
 
 @require_GET
 def detalhe_planilha(request, planilha_id):
+    """Retorna perguntas e registros para abrir uma planilha no chatbot."""
     planilha = get_object_or_404(
         Planilha.objects.select_related("tema").prefetch_related("registros"),
         pk=planilha_id,
@@ -231,6 +242,7 @@ def detalhe_planilha(request, planilha_id):
 
 @require_POST
 def criar_planilha(request):
+    """Valida e cria uma planilha já contendo o primeiro registro."""
     dados, erro_json = ler_json(request)
     if erro_json:
         return erro_json
@@ -262,6 +274,7 @@ def criar_planilha(request):
 
 @require_http_methods(["POST", "PATCH"])
 def salvar_registro_planilha(request, planilha_id, registro_id=None):
+    """Adiciona um registro à planilha ou atualiza um registro existente."""
     planilha = get_object_or_404(
         Planilha.objects.select_related("tema"),
         pk=planilha_id,
@@ -310,6 +323,7 @@ def salvar_registro_planilha(request, planilha_id, registro_id=None):
 
 @require_POST
 def criar_conversa(request):
+    """Salva uma conversa sem planilha nomeada e fornece o link de exportação."""
     dados, erro_json = ler_json(request)
     if erro_json:
         return erro_json
@@ -344,6 +358,7 @@ def criar_conversa(request):
 
 
 def gerar_arquivo_excel(planilha, registros, nome_arquivo):
+    """Gera um Excel formatado, convertendo respostas para os tipos adequados."""
     tema = planilha.tema
     perguntas = list(tema.perguntas.all())
     workbook = Workbook()
@@ -393,6 +408,7 @@ def gerar_arquivo_excel(planilha, registros, nome_arquivo):
 
 @require_GET
 def baixar_planilha_por_id(request, planilha_id):
+    """Exporta todos os registros vinculados à planilha selecionada."""
     planilha = get_object_or_404(
         Planilha.objects.select_related("tema").prefetch_related("registros"),
         pk=planilha_id,
@@ -408,6 +424,7 @@ def baixar_planilha_por_id(request, planilha_id):
 
 @require_GET
 def baixar_planilha(request, codigo):
+    """Exporta registros avulsos de um tema que ainda não pertencem a planilhas."""
     tema = get_object_or_404(TemaBot, codigo=codigo, ativo=True)
     planilha = Planilha(tema=tema, nome=tema.nome_planilha)
     registros = RegistroConversa.objects.filter(tema=tema, planilha__isnull=True)

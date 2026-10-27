@@ -1,3 +1,4 @@
+// Referências à interface, ao token CSRF e à configuração fornecida pelo Django.
 const messages = document.querySelector("#chat-messages");
 const controls = document.querySelector("#chat-controls");
 const statusMessage = document.querySelector("#chat-status");
@@ -6,6 +7,7 @@ const recordsCount = document.querySelector("#records-count");
 const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 const config = JSON.parse(document.querySelector("#chatbot-config").textContent);
 
+// Estado da conversa atual: roteiro, planilha, tema, respostas e edição em curso.
 let script;
 let currentSheet;
 let selectedTheme;
@@ -15,6 +17,7 @@ let questionIndex = 0;
 let answers = {};
 
 function addMessage(text, sender = "bot") {
+    // Cria uma mensagem textual e mantém a conversa rolada até a última resposta.
     const bubble = document.createElement("p");
     bubble.className = `message message-${sender}`;
     bubble.textContent = text;
@@ -23,11 +26,13 @@ function addMessage(text, sender = "bot") {
 }
 
 function clearControls() {
+    // Remove os controles de interação anteriores e limpa avisos de validação.
     controls.replaceChildren();
     statusMessage.textContent = "";
 }
 
 function showChoices(choices) {
+    // Renderiza botões de escolha e chama a ação associada a cada opção.
     clearControls();
     const group = document.createElement("div");
     group.className = "choice-list";
@@ -48,6 +53,7 @@ function showChoices(choices) {
 }
 
 function showDownloadLink(url, label) {
+    // Adiciona à área de ações um link para baixar a planilha gerada.
     const link = document.createElement("a");
     link.className = "choice-button download-button";
     link.href = url;
@@ -57,6 +63,7 @@ function showDownloadLink(url, label) {
 }
 
 async function requestJson(url, method = "GET", data = null) {
+    // Centraliza chamadas JSON, CSRF nas gravações e conversão de erros da API.
     const options = { method, headers: {} };
     if (data !== null) {
         options.headers["Content-Type"] = "application/json";
@@ -73,6 +80,7 @@ async function requestJson(url, method = "GET", data = null) {
 }
 
 function showMenu() {
+    // Reinicia o estado local e apresenta as ações principais do chatbot.
     currentSheet = null;
     selectedTheme = null;
     currentMode = null;
@@ -87,6 +95,7 @@ function showMenu() {
 }
 
 function chooseTheme() {
+    // Exibe os temas disponíveis no roteiro e encaminha a escolha para nomeação.
     addMessage(script.mensagens.iniciar_registro, "user");
     addMessage(script.mensagens.escolher_tema);
     showChoices([
@@ -99,6 +108,7 @@ function chooseTheme() {
 }
 
 function askSheetName(theme) {
+    // Solicita o nome da nova planilha antes de iniciar as perguntas do tema.
     selectedTheme = theme;
     addMessage(theme.nome, "user");
     addMessage(script.mensagens.pergunta_nome_planilha);
@@ -148,6 +158,7 @@ function askSheetName(theme) {
 }
 
 async function chooseExistingSheet() {
+    // Busca planilhas salvas e permite selecionar uma para consultar ou editar.
     addMessage(script.mensagens.editar_planilha, "user");
     addMessage(script.mensagens.escolher_planilha);
     clearControls();
@@ -174,6 +185,7 @@ async function chooseExistingSheet() {
 }
 
 async function loadExistingSheet(sheetId) {
+    // Carrega perguntas e registros da planilha escolhida para a conversa.
     clearControls();
     statusMessage.textContent = script.mensagens.carregando;
     try {
@@ -189,6 +201,7 @@ async function loadExistingSheet(sheetId) {
 }
 
 function showSheetOptions() {
+    // Mostra ações disponíveis para a planilha atualmente carregada.
     const sheet = currentSheet.planilha;
     const choices = [
         { label: script.mensagens.adicionar_registro, onSelect: () => beginEntry("add") },
@@ -214,6 +227,7 @@ function showSheetOptions() {
 }
 
 function chooseRecordToEdit() {
+    // Lista os registros atuais para que o usuário escolha qual alterar.
     addMessage(script.mensagens.escolher_registro);
     showChoices([
         ...currentSheet.registros.map((record, index) => ({
@@ -225,6 +239,7 @@ function chooseRecordToEdit() {
 }
 
 function beginEntry(mode, record = null) {
+    // Inicializa o preenchimento ou edição e prepara as respostas existentes.
     currentMode = mode;
     selectedRecord = record;
     questionIndex = 0;
@@ -238,6 +253,7 @@ function beginEntry(mode, record = null) {
 }
 
 function askCurrentQuestion() {
+    // Seleciona a pergunta atual ou avança para a confirmação das respostas.
     const question = currentSheet.perguntas[questionIndex];
     if (!question) {
         showReview();
@@ -249,6 +265,7 @@ function askCurrentQuestion() {
 }
 
 function showQuestionInput(question) {
+    // Monta o campo de entrada adequado ao tipo e às opções da pergunta.
     clearControls();
     const form = document.createElement("form");
     form.className = "details-form";
@@ -315,6 +332,7 @@ function showQuestionInput(question) {
 }
 
 function showReview() {
+    // Resume as respostas e solicita confirmação antes de persistir os dados.
     currentSheet.perguntas.forEach((question) => {
         addMessage(`${question.cabecalho}: ${answers[question.campo] || script.mensagens.nao_informado}`, "user");
     });
@@ -326,6 +344,7 @@ function showReview() {
 }
 
 async function saveEntry() {
+    // Envia criação, adição ou edição ao endpoint e sincroniza o estado da tela.
     addMessage(script.mensagens.confirmar, "user");
     clearControls();
     statusMessage.textContent = script.mensagens.salvando;
@@ -377,6 +396,7 @@ async function saveEntry() {
 }
 
 function showAddAnotherOptions(result) {
+    // Oferece adicionar outro registro, baixar ou voltar após um salvamento.
     clearControls();
     showChoices([
         { label: result.mensagem_adicionar, onSelect: () => beginEntry("add") },
@@ -390,6 +410,7 @@ function showAddAnotherOptions(result) {
 }
 
 function showUpdatedRecordOptions(result) {
+    // Oferece editar outra linha ou concluir após a atualização de um registro.
     clearControls();
     showChoices([
         { label: result.mensagem_editar_linha, onSelect: chooseRecordToEdit },
@@ -403,6 +424,7 @@ function showUpdatedRecordOptions(result) {
 }
 
 function showCompletion(url, sheetName) {
+    // Informa que a planilha está pronta e apresenta o link de download.
     addMessage(`${script.mensagens.planilha_pronta}: ${sheetName}`);
     clearControls();
     showChoices([
@@ -413,6 +435,7 @@ function showCompletion(url, sheetName) {
 }
 
 function addRecordToList(record) {
+    // Atualiza o histórico local e limita a lista visual aos dez itens recentes.
     const emptyState = recordsList.querySelector(".empty-records");
     if (emptyState) {
         emptyState.remove();
@@ -452,6 +475,7 @@ function addRecordToList(record) {
 }
 
 function cancelEntry() {
+    // Cancela somente a etapa atual e retorna às opções da planilha ou ao menu.
     addMessage(script.mensagens.cancelar, "user");
     addMessage(script.mensagens.conversa_cancelada);
     if (currentSheet && currentSheet.planilha?.id) {
@@ -464,6 +488,7 @@ function cancelEntry() {
 }
 
 async function showRecentSheets() {
+    // Busca planilhas salvas e as apresenta como histórico navegável.
     addMessage(script.mensagens.ver_historico, "user");
     clearControls();
     try {
@@ -481,12 +506,14 @@ async function showRecentSheets() {
 }
 
 function showHelp() {
+    // Apresenta instruções curtas e oferece retorno ao menu principal.
     addMessage(script.mensagens.como_funciona, "user");
     addMessage(script.mensagens.menu_ajuda);
     showChoices([{ label: script.mensagens.voltar_menu, onSelect: showMenu, secondary: true }]);
 }
 
 async function initializeChatbot() {
+    // Carrega o roteiro do servidor e inicia a primeira interação do assistente.
     try {
         const response = await fetch(config.roteiro_url);
         if (!response.ok) {

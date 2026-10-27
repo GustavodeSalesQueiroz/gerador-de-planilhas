@@ -2,6 +2,7 @@ from django.db import models
 
 
 class TemaBot(models.Model):
+    """Define um tema do chatbot e sua identificação na aplicação."""
     codigo = models.SlugField(max_length=30, unique=True)
     nome = models.CharField(max_length=80)
     nome_planilha = models.CharField(max_length=31)
@@ -18,6 +19,7 @@ class TemaBot(models.Model):
 
 
 class PerguntaBot(models.Model):
+    """Armazena campos, validações e ordem das perguntas de cada tema."""
     TIPOS = [
         ("text", "Texto"),
         ("number", "Número"),
@@ -47,6 +49,7 @@ class PerguntaBot(models.Model):
 
 
 class MensagemBot(models.Model):
+    """Mantém no banco as mensagens exibidas pelo chatbot."""
     chave = models.SlugField(max_length=40, unique=True)
     texto = models.CharField(max_length=300)
 
@@ -55,6 +58,7 @@ class MensagemBot(models.Model):
 
 
 class Planilha(models.Model):
+    """Representa uma planilha nomeada que agrupa registros de um tema."""
     tema = models.ForeignKey(TemaBot, on_delete=models.PROTECT, related_name="planilhas")
     nome = models.CharField(max_length=100)
     criada_em = models.DateTimeField(auto_now_add=True)
@@ -70,6 +74,7 @@ class Planilha(models.Model):
 
 
 class RegistroConversa(models.Model):
+    """Guarda respostas de uma conversa e sua planilha opcional."""
     tema = models.ForeignKey(TemaBot, on_delete=models.PROTECT, related_name="registros")
     planilha = models.ForeignKey(
         Planilha,
@@ -91,6 +96,7 @@ class RegistroConversa(models.Model):
 
 
 class usuarios(models.Model):
+    """Armazena os campos básicos de usuário definidos no protótipo."""
     nome = models.CharField(max_length=100)
     email = models.EmailField(max_length=100)
     senha = models.CharField(max_length=100)
@@ -100,6 +106,7 @@ class usuarios(models.Model):
 
 
 class RegistroOperacional(models.Model):
+    """Registra detalhes operacionais preexistentes exibidos no histórico."""
     CATEGORIAS = [
         ("pedido", "Pedido"),
         ("venda", "Venda"),

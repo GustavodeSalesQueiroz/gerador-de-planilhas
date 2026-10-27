@@ -10,6 +10,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Adiciona o modelo usado para exibir registros operacionais no histórico.
         migrations.CreateModel(
             name='RegistroOperacional',
             fields=[

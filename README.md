@@ -18,10 +18,15 @@ Protótipo acadêmico de chatbot que conduz o usuário por perguntas armazenadas
 No PowerShell, na pasta do projeto:
 
 ```powershell
+# Cria um ambiente virtual isolado para instalar as dependências.
 python -m venv venv
+# Ativa o ambiente virtual nesta sessão do PowerShell.
 .\venv\Scripts\Activate.ps1
+# Instala o Django e as demais bibliotecas declaradas pelo projeto.
 python -m pip install -r requirements.txt
+# Aplica ao SQLite as migrações que criam tabelas e dados iniciais.
 python manage.py migrate
+# Inicia o servidor de desenvolvimento local do Django.
 python manage.py runserver
 ```
 
@@ -32,6 +37,7 @@ As perguntas e mensagens podem ser atualizadas no Django Admin, em `http://127.0
 ## Testes automatizados
 
 ```powershell
+# Executa os testes automatizados da aplicação home.
 python manage.py test home
 ```
 

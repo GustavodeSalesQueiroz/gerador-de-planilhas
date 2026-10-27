@@ -10,6 +10,7 @@
     <script src="{% static 'home/js/home.js' %}" defer></script>
 </head>
 <body>
+    <!-- Cabeçalho com a marca e atalhos para as áreas principais da página. -->
     <header class="topbar">
         <a class="brand" href="{% url 'home' %}" aria-label="Página inicial do assistente">
             <span class="brand-mark" aria-hidden="true">M</span>
@@ -23,6 +24,7 @@
     </header>
 
     <main>
+        <!-- Apresenta o objetivo do protótipo e informa onde os dados são salvos. -->
         <section class="intro" id="como-funciona">
             <div>
                 <p class="eyebrow">PROJETO EXTENSIONISTA · PROTÓTIPO</p>
@@ -35,6 +37,7 @@
             </div>
         </section>
 
+        <!-- Reúne o chat interativo e as instruções resumidas de uso. -->
         <section class="workspace" id="chat" aria-label="Área do chatbot">
             <div class="chat-card">
                 <div class="chat-heading">
@@ -46,9 +49,11 @@
                     <span class="secure-label">Atendimento guiado</span>
                 </div>
 
+                <!-- O JavaScript insere mensagens e opções nestes pontos do chat. -->
                 <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
                 <div id="chat-controls" class="chat-controls"></div>
 
+                <!-- Fornece o token CSRF necessário às requisições que gravam dados. -->
                 <form id="csrf-form" class="hidden-form">
                     {% csrf_token %}
                 </form>
@@ -70,6 +75,7 @@
             </aside>
         </section>
 
+        <!-- Exibe até dez planilhas ou registros operacionais mais recentes. -->
         <section class="records-section" id="registros">
             <div class="section-heading">
                 <div>
@@ -92,11 +98,13 @@
         </section>
     </main>
 
+    <!-- Identifica o protótipo e as tecnologias utilizadas na interface. -->
     <footer>
         <span>Protótipo acadêmico · May Artes 3D</span>
         <span>Django · SQLite · HTML · CSS · JavaScript</span>
     </footer>
 
+    <!-- Transfere URLs calculadas pelo Django para inicializar o JavaScript. -->
     {{ chatbot_config|json_script:"chatbot-config" }}
 </body>
 </html>

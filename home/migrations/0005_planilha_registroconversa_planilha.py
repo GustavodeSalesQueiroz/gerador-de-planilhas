@@ -5,6 +5,7 @@ from django.db import migrations, models
 
 
 def move_existing_conversations_to_spreadsheets(apps, schema_editor):
+    """Agrupa conversas antigas em planilhas para manter os dados existentes."""
     TemaBot = apps.get_model("home", "TemaBot")
     Planilha = apps.get_model("home", "Planilha")
     RegistroConversa = apps.get_model("home", "RegistroConversa")
@@ -23,6 +24,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Cria planilhas nomeadas para organizar novos grupos de registros.
         migrations.CreateModel(
             name='Planilha',
             fields=[
@@ -38,10 +40,12 @@ class Migration(migrations.Migration):
                 'ordering': ['-atualizada_em', 'nome'],
             },
         ),
+        # Adiciona aos registros o vínculo opcional com uma planilha.
         migrations.AddField(
             model_name='registroconversa',
             name='planilha',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='registros', to='home.planilha'),
         ),
+        # Migra conversas sem planilha para uma planilha do mesmo tema.
         migrations.RunPython(move_existing_conversations_to_spreadsheets, migrations.RunPython.noop),
     ]

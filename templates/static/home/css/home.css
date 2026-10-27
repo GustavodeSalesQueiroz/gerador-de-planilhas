@@ -1,3 +1,4 @@
+/* Define a paleta, a tipografia e o modelo de caixa compartilhados na página. */
 :root {
     color-scheme: light;
     --ink: #202b35;
@@ -12,6 +13,7 @@
     font-family: "Segoe UI", Arial, sans-serif;
 }
 
+/* Normaliza o dimensionamento dos elementos e aplica o fundo geral. */
 * {
     box-sizing: border-box;
 }
@@ -27,6 +29,7 @@ textarea {
     font: inherit;
 }
 
+/* Organiza a navegação superior, a marca e seus links. */
 .topbar {
     display: flex;
     align-items: center;
@@ -91,6 +94,7 @@ main {
     margin: 0 auto;
 }
 
+/* Destaca a apresentação inicial e o aviso sobre o armazenamento local. */
 .intro {
     display: flex;
     align-items: end;
@@ -156,6 +160,7 @@ main {
     font-weight: 700;
 }
 
+/* Distribui o chatbot e o cartão lateral em colunas responsivas. */
 .workspace {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
@@ -163,6 +168,7 @@ main {
     align-items: start;
 }
 
+/* Padroniza os cartões e organiza cabeçalho, avatar e status do assistente. */
 .chat-card,
 .guide-card,
 .records-section {
@@ -220,6 +226,7 @@ main {
     font-size: 11px;
 }
 
+/* Formata o histórico de mensagens e os campos de interação do chatbot. */
 .chat-messages {
     display: flex;
     min-height: 250px;
@@ -251,6 +258,7 @@ main {
     border-radius: 14px 4px 14px 14px;
 }
 
+/* Define aparência, estados de foco e disposição das ações do usuário. */
 .chat-controls {
     padding: 12px 22px 16px;
 }
@@ -342,6 +350,7 @@ textarea:focus-visible {
     padding: 0 22px 15px;
 }
 
+/* Apresenta os passos do fluxo e a orientação sobre privacidade. */
 .guide-card {
     padding: 22px;
 }
@@ -411,6 +420,7 @@ textarea:focus-visible {
     line-height: 1.5;
 }
 
+/* Organiza o título, a contagem e os cartões do histórico de registros. */
 .records-section {
     margin: 22px 0 50px;
     padding: 22px;
@@ -483,6 +493,7 @@ textarea:focus-visible {
     display: none;
 }
 
+/* Mantém o rodapé alinhado e separado do conteúdo principal. */
 footer {
     display: flex;
     justify-content: space-between;
@@ -494,6 +505,7 @@ footer {
     font-size: 11px;
 }
 
+/* Empilha os cartões e ajusta a navegação em telas médias. */
 @media (max-width: 760px) {
     .topbar {
         align-items: flex-start;
@@ -532,6 +544,7 @@ footer {
     }
 }
 
+/* Reduz espaçamentos e adapta elementos para telas estreitas. */
 @media (max-width: 520px) {
     main {
         width: min(100% - 24px, 1120px);
