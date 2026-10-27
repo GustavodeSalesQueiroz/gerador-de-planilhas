@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Chatbot simples para organizar registros operacionais da May Artes 3D.">
+    <title>Assistente de registros | May Artes 3D</title>
+    <link rel="stylesheet" href="{% static 'home/css/home.css' %}">
+    <script src="{% static 'home/js/home.js' %}" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="{% url 'home' %}" aria-label="Página inicial do assistente">
+            <span class="brand-mark" aria-hidden="true">M</span>
+            <span>May Artes 3D <small>Assistente de registros</small></span>
+        </a>
+        <nav aria-label="Navegação principal">
+            <a href="#chat">Chatbot</a>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#registros">Registros</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="intro" id="como-funciona">
+            <div>
+                <p class="eyebrow">PROJETO EXTENSIONISTA · PROTÓTIPO</p>
+                <h1>Registros organizados, <span>passo a passo.</span></h1>
+                <p>Crie planilhas com vários registros, edite as já salvas e baixe o Excel atualizado para pedidos, vendas, produtos, estoque ou eventos.</p>
+            </div>
+            <div class="intro-note">
+                <span class="note-icon" aria-hidden="true">i</span>
+                <p>Esta versão de demonstração salva os dados no SQLite local. Ela ainda não envia informações para a nuvem nem atualiza planilhas externas.</p>
+            </div>
+        </section>
+
+        <section class="workspace" id="chat" aria-label="Área do chatbot">
+            <div class="chat-card">
+                <div class="chat-heading">
+                    <div class="bot-avatar" aria-hidden="true">M</div>
+                    <div>
+                        <h2>Assistente de registros</h2>
+                        <p><span class="online-dot"></span> Pronto para ajudar</p>
+                    </div>
+                    <span class="secure-label">Atendimento guiado</span>
+                </div>
+
+                <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+                <div id="chat-controls" class="chat-controls"></div>
+
+                <form id="csrf-form" class="hidden-form">
+                    {% csrf_token %}
+                </form>
+                <p id="chat-status" class="chat-status" role="status" aria-live="polite"></p>
+            </div>
+
+            <aside class="guide-card">
+                <p class="eyebrow">FLUXO DA CONVERSA</p>
+                <h2>Simples assim</h2>
+                <ol class="steps">
+                    <li><span>1</span><div><strong>Escolha um tema</strong><small>Pedidos, vendas, produtos, estoque ou eventos.</small></div></li>
+                    <li><span>2</span><div><strong>Responda às perguntas</strong><small>O assistente pergunta os campos necessários.</small></div></li>
+                    <li><span>3</span><div><strong>Continue ou edite</strong><small>Adicione outros registros ou altere os existentes.</small></div></li>
+                </ol>
+                <div class="privacy-note">
+                    <strong>Dica de privacidade</strong>
+                    <p>Não informe senhas, dados de pagamento ou dados pessoais de clientes na descrição.</p>
+                </div>
+            </aside>
+        </section>
+
+        <section class="records-section" id="registros">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">HISTÓRICO LOCAL</p>
+                    <h2>Últimos registros</h2>
+                </div>
+                <span id="records-count" class="records-count">{{ registros|length }} de 10</span>
+            </div>
+            <div id="records-list" class="records-list">
+                {% for registro in registros %}
+                    <article class="record-item"{% if registro.planilha_id %} data-planilha-id="{{ registro.planilha_id }}"{% endif %}>
+                        <span class="record-category">{{ registro.tema }}</span>
+                        <p>{{ registro.resumo }}</p>
+                        <time>{{ registro.criado_em|date:"d/m/Y H:i" }}</time>
+                    </article>
+                {% empty %}
+                    <p class="empty-records">Nenhum registro salvo ainda. Inicie uma conversa para adicionar o primeiro.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <span>Protótipo acadêmico · May Artes 3D</span>
+        <span>Django · SQLite · HTML · CSS · JavaScript</span>
+    </footer>
+
+    {{ chatbot_config|json_script:"chatbot-config" }}
+</body>
+</html>
