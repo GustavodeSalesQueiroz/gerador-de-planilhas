@@ -1,3 +1,4 @@
+# Disponibiliza a classe base para configurar um aplicativo Django.
 from django.apps import AppConfig
 
 

@@ -1,4 +1,6 @@
+# Define a função path usada para mapear endereços web a views.
 from django.urls import path
+# Importa as views locais que atendem às rotas deste aplicativo.
 from . import views
 
 # Mapeia a interface, as APIs de planilhas/conversas e as rotas de exportação.
@@ -6,6 +8,11 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("api/roteiro/", views.roteiro_chatbot, name="roteiro_chatbot"),
     path("api/planilhas/", views.listar_planilhas, name="listar_planilhas"),
+    path(
+        "api/planilhas/externas/editar/",
+        views.editar_planilha_externa,
+        name="editar_planilha_externa",
+    ),
     path("api/planilhas/criar/", views.criar_planilha, name="criar_planilha"),
     path("api/planilhas/<int:planilha_id>/", views.detalhe_planilha, name="detalhe_planilha"),
     path(

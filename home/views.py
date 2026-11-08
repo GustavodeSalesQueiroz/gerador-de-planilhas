@@ -1,21 +1,48 @@
+# Converte corpos JSON das requisições e prepara os dados de resposta.
 import json
+# Oferece operações matemáticas usadas nas validações de números.
+import math
+# Permite localizar e validar padrões em textos.
 import re
-from datetime import datetime
+# Fornece tipos e conversões para datas e horários.
+from datetime import date, datetime, time
+# Representa números decimais com precisão e identifica falhas de conversão.
 from decimal import Decimal, InvalidOperation
+# Cria um arquivo temporário em memória para gerar downloads do Excel.
 from io import BytesIO
+# Manipula caminhos de arquivos de forma compatível com o sistema operacional.
+from pathlib import Path
+# Identifica arquivos ZIP inválidos e permite inspecionar o conteúdo do XLSX.
+from zipfile import BadZipFile, ZipFile
 
+# Agrupa operações do banco em transações que podem ser revertidas em caso de erro.
 from django.db import transaction
+# Conta registros relacionados em consultas ao banco.
 from django.db.models import Count
+# Cria respostas de download e respostas JSON para o navegador.
 from django.http import FileResponse, JsonResponse
+# Busca objetos ou responde com erro 404 e renderiza páginas HTML.
 from django.shortcuts import get_object_or_404, render
+# Gera versões simplificadas de textos, usadas em nomes e identificadores.
 from django.template.defaultfilters import slugify
+# Constrói URLs pelo nome definido nas rotas do Django.
 from django.urls import reverse
+# Converte datas para o fuso horário configurado na aplicação.
 from django.utils import timezone
+# Permite exibir respostas dentro de páginas do mesmo site, como o iframe de download.
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+# Restringe quais métodos HTTP cada view pode receber.
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
-from openpyxl import Workbook
+# Cria e abre pastas de trabalho do Excel.
+from openpyxl import Workbook, load_workbook
+# Define alinhamento, fontes e preenchimentos nas células do Excel.
 from openpyxl.styles import Alignment, Font, PatternFill
+# Converte números de coluna em letras, como 1 em A, para formatação da planilha.
 from openpyxl.utils import get_column_letter
+# Identifica formatos de arquivo Excel não suportados ou inválidos.
+from openpyxl.utils.exceptions import InvalidFileException
 
+# Importa os modelos do app usados para consultar e salvar dados no banco.
 from .models import MensagemBot, Planilha, RegistroConversa, RegistroOperacional, TemaBot
 
 
@@ -52,6 +79,7 @@ def home(request):
                 "roteiro_url": reverse("roteiro_chatbot"),
                 "planilhas_url": reverse("listar_planilhas"),
                 "criar_planilha_url": reverse("criar_planilha"),
+                "editar_planilha_externa_url": reverse("editar_planilha_externa"),
             },
         },
     )
@@ -354,6 +382,160 @@ def criar_conversa(request):
             "download_url": reverse("baixar_planilha", args=[tema.codigo]),
         },
         status=201,
+    )
+
+
+MAX_EXTERNAL_WORKBOOK_SIZE = 2 * 1024 * 1024
+MAX_EXTERNAL_UNCOMPRESSED_SIZE = 20 * 1024 * 1024
+MAX_EXTERNAL_SHEET_CELLS = 5000
+EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def abrir_planilha_externa(request):
+    """Valida e abre o arquivo Excel enviado sem armazená-lo no servidor."""
+    arquivo = request.FILES.get("arquivo")
+    if not arquivo:
+        return None, None, JsonResponse({"erro": "Selecione um arquivo Excel .xlsx."}, status=400)
+    if not arquivo.name.lower().endswith(".xlsx"):
+        return None, None, JsonResponse({"erro": "Envie um arquivo no formato .xlsx."}, status=400)
+    if arquivo.size > MAX_EXTERNAL_WORKBOOK_SIZE:
+        return None, None, JsonResponse({"erro": "O arquivo deve ter no máximo 2 MB."}, status=400)
+
+    # Limites comprimido e descomprimido reduzem o risco de uploads excessivos.
+    conteudo = arquivo.read()
+    try:
+        with ZipFile(BytesIO(conteudo)) as pacote:
+            itens = pacote.infolist()
+            if len(itens) > 1000 or sum(item.file_size for item in itens) > MAX_EXTERNAL_UNCOMPRESSED_SIZE:
+                return None, None, JsonResponse({"erro": "O conteúdo descompactado do arquivo excede o limite permitido."}, status=400)
+        workbook = load_workbook(BytesIO(conteudo), data_only=False)
+    except (BadZipFile, InvalidFileException, KeyError, OSError, RuntimeError, ValueError):
+        return None, None, JsonResponse({"erro": "Não foi possível abrir o arquivo. Confira se ele é um Excel .xlsx válido."}, status=400)
+
+    nome_aba = request.POST.get("aba") or workbook.active.title
+    if nome_aba not in workbook.sheetnames:
+        return None, None, JsonResponse({"erro": "A aba escolhida não existe nesse arquivo."}, status=400)
+
+    sheet = workbook[nome_aba]
+    if sheet.max_row * sheet.max_column > MAX_EXTERNAL_SHEET_CELLS:
+        return None, None, JsonResponse({"erro": "A aba deve ter no máximo 5.000 células para edição."}, status=400)
+    return workbook, sheet, None
+
+
+def valor_excel_para_texto(valor):
+    """Converte valores de células em texto simples para a grade de edição."""
+    if valor is None:
+        return ""
+    if isinstance(valor, datetime):
+        return valor.isoformat(sep=" ")
+    if isinstance(valor, (date, time)):
+        return valor.isoformat()
+    return str(valor)
+
+
+def editar_valor_excel(valor_original, valor_novo):
+    """Preserva tipos básicos ao editar células e mantém fórmulas digitadas como texto."""
+    if valor_novo == "":
+        return None
+    if isinstance(valor_original, bool):
+        valor_normalizado = valor_novo.strip().lower()
+        if valor_normalizado in {"true", "verdadeiro"}:
+            return True
+        if valor_normalizado in {"false", "falso"}:
+            return False
+    elif isinstance(valor_original, (int, float)) and not isinstance(valor_original, bool):
+        try:
+            numero = Decimal(valor_novo)
+        except InvalidOperation:
+            pass
+        else:
+            if numero.is_finite() and abs(numero) <= Decimal("1e308"):
+                if isinstance(valor_original, int) and numero == numero.to_integral_value():
+                    return int(numero)
+                numero_float = float(numero)
+                if math.isfinite(numero_float):
+                    return numero_float
+    elif isinstance(valor_original, datetime):
+        try:
+            return datetime.fromisoformat(valor_novo)
+        except ValueError:
+            pass
+    elif isinstance(valor_original, date):
+        try:
+            return date.fromisoformat(valor_novo)
+        except ValueError:
+            pass
+
+    return valor_novo
+
+
+@require_POST
+@xframe_options_sameorigin
+def editar_planilha_externa(request):
+    """Mostra uma aba de um .xlsx ou devolve o arquivo com células editadas."""
+    # A prévia recebe somente o nome da aba; o envio de alterações gera o arquivo final.
+    workbook, sheet, error = abrir_planilha_externa(request)
+    if error:
+        return error
+
+    alteracoes_json = request.POST.get("alteracoes")
+    if alteracoes_json is None:
+        linhas = [
+            [
+                valor_excel_para_texto(sheet.cell(row=row, column=column).value)
+                for column in range(1, sheet.max_column + 1)
+            ]
+            for row in range(1, sheet.max_row + 1)
+        ]
+        return JsonResponse({
+            "abas": workbook.sheetnames,
+            "aba": sheet.title,
+            "linhas": linhas,
+            "colunas": [get_column_letter(column) for column in range(1, sheet.max_column + 1)],
+        })
+
+    try:
+        alteracoes = json.loads(alteracoes_json)
+    except json.JSONDecodeError:
+        return JsonResponse({"erro": "As alterações enviadas não são válidas."}, status=400)
+    if not isinstance(alteracoes, list) or len(alteracoes) > MAX_EXTERNAL_SHEET_CELLS:
+        return JsonResponse({"erro": "A lista de alterações não é válida."}, status=400)
+
+    for alteracao in alteracoes:
+        if not isinstance(alteracao, dict):
+            return JsonResponse({"erro": "Uma das alterações está inválida."}, status=400)
+        linha = alteracao.get("linha")
+        coluna = alteracao.get("coluna")
+        valor = alteracao.get("valor")
+        if (
+            not isinstance(linha, int)
+            or isinstance(linha, bool)
+            or not isinstance(coluna, int)
+            or isinstance(coluna, bool)
+            or not 1 <= linha <= sheet.max_row
+            or not 1 <= coluna <= sheet.max_column
+            or not isinstance(valor, str)
+            or len(valor) > 32767
+        ):
+            return JsonResponse({"erro": "Uma das células editadas está fora dos limites ou contém texto muito longo."}, status=400)
+
+        cell = sheet.cell(row=linha, column=coluna)
+        cell.value = editar_valor_excel(cell.value, valor)
+        # Entradas iniciadas com "=" permanecem texto e não viram fórmulas executáveis.
+        if isinstance(cell.value, str):
+            cell.data_type = "s"
+
+    # A cópia é gerada em memória para não salvar o arquivo enviado no servidor.
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    nome_base = Path(request.FILES["arquivo"].name).stem
+    nome_seguro = slugify(nome_base) or "planilha"
+    return FileResponse(
+        output,
+        as_attachment=True,
+        filename=f"{nome_seguro}-editada.xlsx",
+        content_type=EXCEL_CONTENT_TYPE,
     )
 
 

@@ -1,3 +1,4 @@
+# Fornece os tipos de campo e recursos de modelagem do banco de dados do Django.
 from django.db import models
 
 

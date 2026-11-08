@@ -1,10 +1,20 @@
+# Converte objetos Python para JSON nas requisições de teste da API.
 import json
+# Mantém arquivos Excel de teste em memória, sem criar arquivos no disco.
 from io import BytesIO
 
+# Cria arquivos enviados simulados para testar endpoints de upload.
+from django.core.files.uploadedfile import SimpleUploadedFile
+# Fornece o cliente HTTP de teste e a classe base para testes Django.
 from django.test import Client, TestCase
+# Resolve endereços de rotas pelo nome nas requisições de teste.
 from django.urls import reverse
-from openpyxl import load_workbook
+# Cria e reabre arquivos Excel para verificar os resultados dos testes.
+from openpyxl import Workbook, load_workbook
+# Permite aplicar formatação às células nas planilhas de teste.
+from openpyxl.styles import Font
 
+# Importa os modelos usados para preparar e conferir dados nos testes.
 from .models import Planilha, RegistroConversa, TemaBot
 
 
@@ -41,6 +51,23 @@ class ChatbotTests(TestCase):
             content_type="application/json",
         )
 
+    def external_workbook_file(self):
+        """Cria um arquivo de exemplo com duas abas para os testes de edição."""
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Dados"
+        sheet.append(["Produto", "Quantidade", "Total"])
+        sheet.append(["Miniatura", 3, "=B2*10"])
+        sheet["A1"].font = Font(bold=True)
+        workbook.create_sheet("Outra aba")["A1"] = "Preservada"
+        output = BytesIO()
+        workbook.save(output)
+        return SimpleUploadedFile(
+            "planilha-teste.xlsx",
+            output.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
     def test_home_shows_chatbot_and_recent_records(self):
         """Confirma que a página inicial apresenta o chatbot e sua configuração."""
         response = self.client.get(reverse("home"))
@@ -48,6 +75,66 @@ class ChatbotTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Assistente de registros")
         self.assertContains(response, "chatbot-config")
+        self.assertContains(response, "Edite um arquivo Excel")
+
+    def test_external_spreadsheet_preview_lists_tabs_and_cells(self):
+        """Mostra abas e valores do Excel enviado sem alterar o arquivo original."""
+        response = self.client.post(
+            reverse("editar_planilha_externa"),
+            {"arquivo": self.external_workbook_file()},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["abas"], ["Dados", "Outra aba"])
+        self.assertEqual(response.json()["aba"], "Dados")
+        self.assertEqual(response.json()["linhas"][1], ["Miniatura", "3", "=B2*10"])
+
+    def test_external_spreadsheet_download_preserves_workbook_and_applies_edits(self):
+        """Edita células, preserva outras abas/estilos e impede fórmula via texto."""
+        response = self.client.post(
+            reverse("editar_planilha_externa"),
+            {
+                "arquivo": self.external_workbook_file(),
+                "aba": "Dados",
+                "alteracoes": json.dumps([
+                    {"linha": 2, "coluna": 1, "valor": "=2+2"},
+                    {"linha": 2, "coluna": 2, "valor": "8"},
+                ]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertIn('attachment; filename="planilha-teste-editada.xlsx"', response["Content-Disposition"])
+        self.assertEqual(response["X-Frame-Options"], "SAMEORIGIN")
+        workbook = load_workbook(BytesIO(b"".join(response.streaming_content)), data_only=False)
+        sheet = workbook["Dados"]
+        self.assertEqual(sheet["A2"].value, "=2+2")
+        self.assertEqual(sheet["A2"].data_type, "s")
+        self.assertEqual(sheet["B2"].value, 8)
+        self.assertEqual(sheet["C2"].value, "=B2*10")
+        self.assertTrue(sheet["A1"].font.bold)
+        self.assertEqual(workbook["Outra aba"]["A1"].value, "Preservada")
+
+    def test_external_spreadsheet_rejects_invalid_files_and_cell_changes(self):
+        """Rejeita arquivos fora do formato e células inválidas sem processá-las."""
+        invalid_file = self.client.post(
+            reverse("editar_planilha_externa"),
+            {"arquivo": SimpleUploadedFile("dados.csv", b"a,b")},
+        )
+        invalid_changes = self.client.post(
+            reverse("editar_planilha_externa"),
+            {
+                "arquivo": self.external_workbook_file(),
+                "alteracoes": json.dumps([{"linha": 999, "coluna": 1, "valor": "Inválido"}]),
+            },
+        )
+
+        self.assertEqual(invalid_file.status_code, 400)
+        self.assertEqual(invalid_changes.status_code, 400)
 
     def test_script_returns_questions_messages_and_event_theme_from_database(self):
         """Verifica que o roteiro da API contém temas, perguntas e mensagens."""

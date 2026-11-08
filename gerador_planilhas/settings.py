@@ -10,13 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+# Resolve caminhos de arquivos e pastas sem depender de separadores específicos do sistema.
 from pathlib import Path
+# Lê variáveis de ambiente e monta caminhos usados pelas configurações do Django.
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+# As configurações abaixo são voltadas ao desenvolvimento local; revise-as antes de publicar.
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
@@ -37,6 +40,7 @@ ALLOWED_HOSTS = [
 
 # Application definition
 
+# Registra os componentes nativos do Django e o aplicativo que contém o chatbot.
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -57,6 +61,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Define o roteador principal e onde o Django procura os templates HTML.
 ROOT_URLCONF = 'gerador_planilhas.urls'
 
 TEMPLATES = [
@@ -80,6 +85,7 @@ WSGI_APPLICATION = 'gerador_planilhas.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+# SQLite mantém os dados em um arquivo local na raiz do projeto.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -110,6 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
+# Configuração regional usada para datas e horários exibidos na interface.
 LANGUAGE_CODE = 'pt-br'
 
 TIME_ZONE = 'America/Sao_Paulo'
@@ -123,6 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
+# Os arquivos estáticos do site ficam fora do app, na pasta compartilhada templates/static.
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'templates/static'),
 ]

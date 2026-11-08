@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
+# Acessa variáveis de ambiente para selecionar as configurações do Django.
 import os
+# Lê os argumentos passados ao comando manage.py.
 import sys
 
 
@@ -8,6 +10,7 @@ def main():
     """Prepara as configurações Django e executa o comando solicitado."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerador_planilhas.settings')
     try:
+        # Encaminha os argumentos para o sistema de comandos administrativos do Django.
         from django.core.management import execute_from_command_line
     except ImportError as exc:
         raise ImportError(

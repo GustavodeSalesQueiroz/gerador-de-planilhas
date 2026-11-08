@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Chatbot simples para organizar registros operacionais da May Artes 3D.">
     <title>Assistente de registros | May Artes 3D</title>
-    <link rel="stylesheet" href="{% static 'home/css/home.css' %}">
-    <script src="{% static 'home/js/home.js' %}" defer></script>
+    <link rel="stylesheet" href="{% static 'home/css/home.css' %}?v=13">
+    <script src="{% static 'home/js/home.js' %}?v=2" defer></script>
 </head>
 <body>
     <!-- Cabeçalho com a marca e atalhos para as áreas principais da página. -->
@@ -18,22 +18,53 @@
         </a>
         <nav aria-label="Navegação principal">
             <a href="#chat">Chatbot</a>
-            <a href="#como-funciona">Como funciona</a>
-            <a href="#registros">Registros</a>
+            <a href="#contato">Contato</a>
         </nav>
     </header>
+
+    <!-- Informações sobre a May Artes 3D em um banner de largura total. -->
+    <section class="about-section" id="sobre-nos">
+        <img src="{% static 'home/img/Gemini_Generated_Image_yjs3k4yjs3k4yjs3.jpg' %}?v=2" alt="" class="about-image" aria-hidden="true">
+        <div class="about-content">
+            <h1><span>May Artes 3D</span></h1>
+            <h2>Na May Artes 3D, transformamos criatividade, tecnologia e paixão pelo universo geek em peças que ganham vida!</h2>
+            <p>Somos uma empresa especializada em impressão 3D, com produção própria e um catálogo cheio de personalidade, inspirado no universo dos animes, games, filmes e da cultura pop.
+               Criamos figures colecionáveis, chaveiros, itens decorativos, acessórios e produtos personalizados, sempre buscando trazer novidades e peças que encantam fãs de todas as idades.
+               Mais do que produzir peças em 3D, queremos criar experiências, despertar a criatividade e fazer parte das histórias de quem ama esse universo tanto quanto nós!
+            </p>
+        </div>
+    </section>
+
+    <section class="product-gallery" aria-label="Produtos em destaque">
+        <div class="product-gallery-heading">
+            <h2>Produtos</h2>
+            <p>Action figures de anime da melhor qualidade, feitas com carinho para você.</p>
+        </div>
+        <article class="product-card">
+            <img src="{% static 'home/img/silksong.webp' %}" alt="Diorama de Hollow Knight: Silksong">
+            <h2>Hollow Knight: Silksong</h2>
+        </article>
+        <article class="product-card">
+            <img src="{% static 'home/img/hollow-knight.webp' %}" alt="Figura de Hollow Knight">
+            <h2>Hollow Knight</h2>
+        </article>
+        <article class="product-card">
+            <img src="{% static 'home/img/jujutsu-kaisen.webp' %}" alt="Figura de Jujutsu Kaisen">
+            <h2>Jujutsu Kaisen</h2>
+        </article>
+    </section>
 
     <main>
         <!-- Apresenta o objetivo do protótipo e informa onde os dados são salvos. -->
         <section class="intro" id="como-funciona">
             <div>
-                <p class="eyebrow">PROJETO EXTENSIONISTA · PROTÓTIPO</p>
+                <p class="eyebrow">COMO FUNCIONA</p>
                 <h1>Registros organizados, <span>passo a passo.</span></h1>
                 <p>Crie planilhas com vários registros, edite as já salvas e baixe o Excel atualizado para pedidos, vendas, produtos, estoque ou eventos.</p>
             </div>
             <div class="intro-note">
                 <span class="note-icon" aria-hidden="true">i</span>
-                <p>Esta versão de demonstração salva os dados no SQLite local. Ela ainda não envia informações para a nuvem nem atualiza planilhas externas.</p>
+                <p>Os registros do chatbot ficam no SQLite desta aplicação. A edição de um Excel externo gera uma cópia para download e não altera arquivos na nuvem.</p>
             </div>
         </section>
 
@@ -96,12 +127,45 @@
                 {% endfor %}
             </div>
         </section>
+
+        <!-- O arquivo fica no navegador até o envio e a aplicação devolve uma cópia editada. -->
+        <section class="records-section external-editor-section" id="editar-arquivo">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">PLANILHAS EXTERNAS</p>
+                    <h2>Edite um arquivo Excel</h2>
+                </div>
+            </div>
+            <p class="external-editor-help">Envie um arquivo .xlsx, escolha a aba e edite células existentes. O arquivo é processado pela aplicação, mas não fica salvo no histórico. Você baixará uma cópia; o original não será alterado. Limite de 2 MB e 5.000 células por aba.</p>
+            <form id="external-upload-form" class="external-upload-form" method="post" enctype="multipart/form-data" target="external-download-frame">
+                {% csrf_token %}
+                <label for="external-workbook">Arquivo Excel (.xlsx)</label>
+                <input id="external-workbook" name="arquivo" type="file" accept=".xlsx" required>
+                <input id="external-changes" name="alteracoes" type="hidden">
+                <button class="choice-button" type="submit">Carregar planilha</button>
+                <div id="external-sheet-picker" class="external-sheet-picker" hidden>
+                    <label for="external-sheet">Aba da planilha</label>
+                    <select id="external-sheet" name="aba"></select>
+                    <button id="external-load-sheet" class="choice-button choice-secondary" type="button">Abrir aba</button>
+                </div>
+            </form>
+            <p id="external-editor-status" class="chat-status" role="status" aria-live="polite"></p>
+            <div id="external-editor" class="external-editor" hidden>
+                <p id="external-sheet-title" class="external-sheet-title"></p>
+                <div id="external-grid" class="external-grid"></div>
+                <button id="external-download" class="choice-button" type="button">Baixar planilha editada</button>
+            </div>
+            <iframe class="download-frame" name="external-download-frame" title="Download da planilha editada" hidden></iframe>
+        </section>
+
     </main>
 
-    <!-- Identifica o protótipo e as tecnologias utilizadas na interface. -->
-    <footer>
-        <span>Protótipo acadêmico · May Artes 3D</span>
-        <span>Django · SQLite · HTML · CSS · JavaScript</span>
+    <footer class="site-footer">
+        <p class="footer-brand">May Artes 3D — Colecionáveis • Geek • Games</p>
+        <div class="footer-contact" id="contato">
+            <span>📍 São Paulo/SP</span>
+            <a href="https://www.instagram.com/may_artes3d/" target="_blank" rel="noopener noreferrer">📸 Instagram: @may_artes3d</a>
+        </div>
     </footer>
 
     <!-- Transfere URLs calculadas pelo Django para inicializar o JavaScript. -->

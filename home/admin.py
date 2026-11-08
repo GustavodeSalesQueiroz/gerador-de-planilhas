@@ -1,4 +1,6 @@
+# Fornece a interface administrativa usada para cadastrar e consultar modelos.
 from django.contrib import admin
+# Importa os modelos do app que serão registrados no painel administrativo.
 from .models import MensagemBot, PerguntaBot, Planilha, RegistroConversa, RegistroOperacional, TemaBot
 
 # Disponibiliza os cadastros do chatbot e os registros no Django Admin.

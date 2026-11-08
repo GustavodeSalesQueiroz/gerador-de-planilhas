@@ -7,6 +7,20 @@ const recordsCount = document.querySelector("#records-count");
 const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 const config = JSON.parse(document.querySelector("#chatbot-config").textContent);
 
+// Controles e estado da edição local de arquivos Excel externos.
+const externalUploadForm = document.querySelector("#external-upload-form");
+const externalWorkbookInput = document.querySelector("#external-workbook");
+const externalChangesInput = document.querySelector("#external-changes");
+const externalSheetPicker = document.querySelector("#external-sheet-picker");
+const externalSheetSelect = document.querySelector("#external-sheet");
+const externalLoadSheetButton = document.querySelector("#external-load-sheet");
+const externalEditor = document.querySelector("#external-editor");
+const externalEditorStatus = document.querySelector("#external-editor-status");
+const externalSheetTitle = document.querySelector("#external-sheet-title");
+const externalGrid = document.querySelector("#external-grid");
+const externalDownloadButton = document.querySelector("#external-download");
+const externalDownloadFrame = document.querySelector(".download-frame");
+
 // Estado da conversa atual: roteiro, planilha, tema, respostas e edição em curso.
 let script;
 let currentSheet;
@@ -15,6 +29,8 @@ let currentMode;
 let selectedRecord;
 let questionIndex = 0;
 let answers = {};
+let externalRows = [];
+let externalChanges = new Map();
 
 function addMessage(text, sender = "bot") {
     // Cria uma mensagem textual e mantém a conversa rolada até a última resposta.
@@ -58,7 +74,6 @@ function showDownloadLink(url, label) {
     link.className = "choice-button download-button";
     link.href = url;
     link.textContent = label;
-    link.setAttribute("download", "");
     controls.append(link);
 }
 
@@ -527,4 +542,183 @@ async function initializeChatbot() {
     }
 }
 
+function initializeExternalEditor() {
+    externalWorkbookInput.addEventListener("change", () => {
+        externalSheetPicker.hidden = true;
+        externalEditor.hidden = true;
+        externalEditorStatus.textContent = "";
+        externalGrid.replaceChildren();
+        externalRows = [];
+        externalChanges.clear();
+    });
+
+    externalUploadForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        loadExternalWorkbook();
+    });
+    externalLoadSheetButton.addEventListener("click", loadExternalWorkbook);
+    externalDownloadButton.addEventListener("click", downloadExternalWorkbook);
+    externalDownloadFrame.addEventListener("load", showExternalDownloadError);
+}
+
+function externalWorkbookFormData(includeChanges = false) {
+    // Reenvia o arquivo original junto à aba e, ao exportar, somente células alteradas.
+    const formData = new FormData();
+    formData.append("arquivo", externalWorkbookInput.files[0]);
+    if (!externalSheetPicker.hidden && externalSheetSelect.value) {
+        formData.append("aba", externalSheetSelect.value);
+    }
+    if (includeChanges) {
+        formData.append("alteracoes", JSON.stringify([...externalChanges.values()]));
+    }
+    return formData;
+}
+
+async function externalRequest(formData) {
+    // Usa multipart/form-data para o arquivo e CSRF para proteger a requisição POST.
+    const response = await fetch(config.editar_planilha_externa_url, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrfToken },
+        body: formData,
+    });
+    if (!response.ok) {
+        let message = "Não foi possível processar a planilha.";
+        try {
+            const result = await response.json();
+            message = result.erro || message;
+        } catch {
+            // Mantém uma mensagem legível quando o servidor retorna erro sem JSON.
+        }
+        throw new Error(message);
+    }
+    return response;
+}
+
+async function loadExternalWorkbook() {
+    if (!externalWorkbookInput.files.length) {
+        externalEditorStatus.textContent = "Selecione um arquivo .xlsx primeiro.";
+        return;
+    }
+
+    externalEditorStatus.textContent = "Carregando planilha...";
+    externalLoadSheetButton.disabled = true;
+    externalUploadForm.querySelector('button[type="submit"]').disabled = true;
+    try {
+        // A resposta JSON contém as abas, a aba ativa e os valores preparados para edição.
+        const response = await externalRequest(externalWorkbookFormData());
+        const result = await response.json();
+        externalSheetSelect.replaceChildren();
+        result.abas.forEach((sheetName) => {
+            const option = document.createElement("option");
+            option.value = sheetName;
+            option.textContent = sheetName;
+            externalSheetSelect.append(option);
+        });
+        externalSheetSelect.value = result.aba;
+        externalSheetPicker.hidden = false;
+        renderExternalGrid(result);
+        externalEditorStatus.textContent = "Edite as células desejadas e baixe uma cópia quando terminar.";
+    } catch (error) {
+        externalEditor.hidden = true;
+        externalEditorStatus.textContent = error.message;
+    } finally {
+        externalLoadSheetButton.disabled = false;
+        externalUploadForm.querySelector('button[type="submit"]').disabled = false;
+    }
+}
+
+function renderExternalGrid(sheet) {
+    // Registra só diferenças em relação à prévia, reduzindo o tamanho do envio final.
+    externalRows = sheet.linhas;
+    externalChanges.clear();
+    externalSheetTitle.textContent = `Aba: ${sheet.aba}`;
+    const table = document.createElement("table");
+    const head = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    const rowHeading = document.createElement("th");
+    rowHeading.scope = "col";
+    rowHeading.textContent = "Linha";
+    headerRow.append(rowHeading);
+    sheet.colunas.forEach((column) => {
+        const heading = document.createElement("th");
+        heading.scope = "col";
+        heading.textContent = column;
+        headerRow.append(heading);
+    });
+    head.append(headerRow);
+    table.append(head);
+
+    const body = document.createElement("tbody");
+    sheet.linhas.forEach((row, rowIndex) => {
+        const tableRow = document.createElement("tr");
+        const rowHeading = document.createElement("th");
+        rowHeading.scope = "row";
+        rowHeading.textContent = String(rowIndex + 1);
+        tableRow.append(rowHeading);
+
+        row.forEach((value, columnIndex) => {
+            const cell = document.createElement("td");
+            const input = document.createElement("input");
+            input.type = "text";
+            input.maxLength = 32767;
+            input.value = value;
+            input.setAttribute("aria-label", `Célula ${sheet.colunas[columnIndex]}${rowIndex + 1}`);
+            input.addEventListener("input", () => {
+                const key = `${rowIndex + 1}:${columnIndex + 1}`;
+                if (input.value === externalRows[rowIndex][columnIndex]) {
+                    externalChanges.delete(key);
+                } else {
+                    externalChanges.set(key, {
+                        linha: rowIndex + 1,
+                        coluna: columnIndex + 1,
+                        valor: input.value,
+                    });
+                }
+            });
+            cell.append(input);
+            tableRow.append(cell);
+        });
+        body.append(tableRow);
+    });
+    table.append(body);
+    externalGrid.replaceChildren(table);
+    externalEditor.hidden = false;
+}
+
+async function downloadExternalWorkbook() {
+    if (!externalWorkbookInput.files.length) {
+        externalEditorStatus.textContent = "Selecione novamente o arquivo Excel para baixar a cópia editada.";
+        return;
+    }
+
+    // O envio nativo mantém o clique do usuário e deixa o navegador tratar o download.
+    externalChangesInput.value = JSON.stringify([...externalChanges.values()]);
+    externalUploadForm.action = config.editar_planilha_externa_url;
+    externalEditorStatus.textContent = "Enviando a planilha. O download deve começar automaticamente.";
+    externalDownloadButton.disabled = true;
+    externalUploadForm.submit();
+    setTimeout(() => {
+        externalDownloadButton.disabled = false;
+    }, 1500);
+}
+
+function showExternalDownloadError() {
+    // Erros JSON do servidor carregam no iframe oculto e continuam visíveis na página.
+    const body = externalDownloadFrame.contentDocument?.body;
+    if (!body) {
+        return;
+    }
+
+    try {
+        const result = JSON.parse(body.textContent);
+        if (result.erro) {
+            externalEditorStatus.textContent = result.erro;
+            externalDownloadButton.disabled = false;
+        }
+    } catch {
+        // Respostas binárias de Excel não contêm JSON e são baixadas pelo navegador.
+    }
+}
+
 initializeChatbot();
+initializeExternalEditor();

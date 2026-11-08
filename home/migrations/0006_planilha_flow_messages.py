@@ -1,3 +1,4 @@
+# Fornece as operações necessárias para alterar os dados do chatbot numa migração.
 from django.db import migrations
 
 

@@ -57,3 +57,8 @@ db.sqlite3                Banco local criado pelo Django
 ## Documentação da entrega
 
 O mapa atualizado da conversa, o plano de testes e a segunda versão de trabalho do relatório estão em [docs/entrega.md](docs/entrega.md). Antes de entregar o relatório, o grupo deve confirmar os dados acadêmicos que não constam no documento fornecido e atualizar os resultados após executar os testes.
+
+## Guias técnicos
+
+- [Como criar o projeto do zero](docs/guia-criar-projeto-do-zero.md): preparação do ambiente, Django, modelos, migrações, chatbot, Excel e testes.
+- [Guia técnico do projeto](docs/guia-tecnico.md): arquitetura e explicação das partes implementadas.

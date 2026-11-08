@@ -1,3 +1,4 @@
+# Fornece as operações necessárias para adicionar dados durante uma migração.
 from django.db import migrations
 
 
