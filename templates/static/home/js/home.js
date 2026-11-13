@@ -53,16 +53,24 @@ function showChoices(choices) {
     const group = document.createElement("div");
     group.className = "choice-list";
 
-    choices.forEach(({ label, onSelect, secondary = false }) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = secondary ? "choice-button choice-secondary" : "choice-button";
-        button.textContent = label;
-        button.addEventListener("click", () => {
-            group.remove();
-            onSelect();
-        });
-        group.append(button);
+    choices.forEach(({ label, onSelect, secondary = false, href, external = false }) => {
+        const choice = document.createElement(href ? "a" : "button");
+        choice.className = secondary ? "choice-button choice-secondary" : "choice-button";
+        choice.textContent = label;
+        if (href) {
+            choice.href = href;
+            if (external) {
+                choice.target = "_blank";
+                choice.rel = "noopener noreferrer";
+            }
+        } else {
+            choice.type = "button";
+            choice.addEventListener("click", () => {
+                group.remove();
+                onSelect();
+            });
+        }
+        group.append(choice);
     });
 
     controls.append(group);
@@ -95,17 +103,81 @@ async function requestJson(url, method = "GET", data = null) {
 }
 
 function showMenu() {
-    // Reinicia o estado local e apresenta as ações principais do chatbot.
+    // Reinicia o estado local e apresenta as opções principais da conversa.
     currentSheet = null;
     selectedTheme = null;
     currentMode = null;
     selectedRecord = null;
     answers = {};
     showChoices([
+        { label: "Quem somos", onSelect: showCompanyMenu },
         { label: script.mensagens.iniciar_registro, onSelect: chooseTheme },
-        { label: script.mensagens.editar_planilha, onSelect: chooseExistingSheet, secondary: true },
+        { label: "Contato", onSelect: showContact },
+        { label: "Mais opções", onSelect: showMoreOptions, secondary: true },
+    ]);
+}
+
+function footerText(selector) {
+    return document.querySelector(selector).textContent.trim();
+}
+
+function showCompanyMenu() {
+    addMessage("Quem somos", "user");
+    addMessage("Sobre a May Artes 3D, escolha uma opção:");
+    showChoices([
+        { label: "Institucional", onSelect: showInstitutional },
+        { label: "O que fazemos", onSelect: showWhatWeDo },
+        { label: script.mensagens.voltar_menu, onSelect: showMenu, secondary: true },
+    ]);
+}
+
+function showInstitutional() {
+    addMessage("Institucional", "user");
+    addMessage(footerText("#footer-company-description"));
+    addMessage([
+        `Razão social: ${footerText("#footer-company-legal-name")}`,
+        `CNPJ: ${footerText("#footer-company-cnpj")}`,
+        `Representante: ${footerText("#footer-company-representative")}`,
+        `CPF do representante: ${footerText("#footer-company-cpf")}`,
+        `Endereço: ${footerText("#footer-company-address")}, ${footerText("#footer-company-city")}`,
+    ].join("\n"));
+    showChoices([
+        { label: "O que fazemos", onSelect: showWhatWeDo },
+        { label: script.mensagens.voltar_menu, onSelect: showMenu, secondary: true },
+    ]);
+}
+
+function showWhatWeDo() {
+    addMessage("O que fazemos", "user");
+    addMessage(footerText("#footer-company-description"));
+    showChoices([
+        { label: "Ver produtos", href: "#produtos" },
+        { label: script.mensagens.iniciar_registro, onSelect: chooseTheme, secondary: true },
+        { label: script.mensagens.voltar_menu, onSelect: showMenu, secondary: true },
+    ]);
+}
+
+function showContact() {
+    addMessage("Contato", "user");
+    addMessage([
+        `Endereço: ${footerText("#footer-company-address")}`,
+        footerText("#footer-company-city"),
+        footerText("#footer-company-instagram"),
+    ].join("\n"));
+    showChoices([
+        { label: "Abrir Instagram", href: document.querySelector("#footer-company-instagram").href, external: true },
+        { label: script.mensagens.voltar_menu, onSelect: showMenu, secondary: true },
+    ]);
+}
+
+function showMoreOptions() {
+    addMessage("Mais opções", "user");
+    addMessage("Escolha uma função:");
+    showChoices([
+        { label: script.mensagens.editar_planilha, onSelect: chooseExistingSheet },
         { label: script.mensagens.ver_historico, onSelect: showRecentSheets, secondary: true },
         { label: script.mensagens.como_funciona, onSelect: showHelp, secondary: true },
+        { label: script.mensagens.voltar_menu, onSelect: showMenu, secondary: true },
     ]);
 }
 
@@ -536,6 +608,7 @@ async function initializeChatbot() {
         }
         script = await response.json();
         addMessage(script.mensagens.boas_vindas);
+        addMessage("Escolha uma opção para saber mais sobre a empresa ou organizar suas planilhas.");
         showMenu();
     } catch {
         statusMessage.textContent = "Não foi possível carregar o roteiro do chatbot.";

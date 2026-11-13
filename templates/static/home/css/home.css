@@ -357,6 +357,7 @@ main {
     border-radius: 4px 14px 14px;
     font-size: 14px;
     line-height: 1.5;
+    white-space: pre-line;
     overflow-wrap: anywhere;
 }
 
@@ -728,38 +729,57 @@ textarea:focus-visible {
 }
 
 /* Mantém o rodapé alinhado e separado do conteúdo principal. */
-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 24px max(5vw, 24px);
+.site-footer {
+    padding: 46px max(5vw, 24px) 20px;
     color: var(--muted);
-    background: var(--paper);
+    background: #eef0ef;
     border-top: 1px solid var(--line);
     font-size: 13px;
 }
 
-.footer-brand {
-    margin: 0;
+.footer-columns {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr));
+    gap: 32px;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+.footer-column h2 {
+    margin: 0 0 16px;
     color: var(--ink);
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 500;
 }
 
-.footer-contact {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px 20px;
+.footer-column p {
+    margin: 0 0 10px;
+    line-height: 1.6;
 }
 
-.footer-contact a {
-    color: var(--green);
+.footer-column strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.footer-column a {
+    color: var(--green-dark);
     text-decoration: none;
 }
 
-.footer-contact a:hover {
+.footer-column a:hover {
     text-decoration: underline;
+}
+
+.footer-bottom {
+    display: flex;
+    justify-content: center;
+    gap: 8px 24px;
+    max-width: 1440px;
+    margin: 34px auto 0;
+    padding-top: 16px;
+    border-top: 1px solid #d8ddda;
+    font-size: 12px;
 }
 
 /* Empilha os cartões e ajusta a navegação em telas médias. */
@@ -767,6 +787,11 @@ footer {
     .about-section {
         min-height: 540px;
         padding: 56px 26px;
+    }
+
+    .footer-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 20px;
     }
 
     .product-gallery {
@@ -855,15 +880,18 @@ footer {
         grid-template-columns: 1fr;
     }
 
-    footer {
-        flex-direction: column;
-        align-items: flex-start;
+    .footer-columns {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .site-footer {
         padding-right: 16px;
         padding-left: 16px;
     }
 
-    .footer-contact {
+    .footer-bottom {
         justify-content: flex-start;
-        flex-direction: column;
+        flex-wrap: wrap;
     }
 }

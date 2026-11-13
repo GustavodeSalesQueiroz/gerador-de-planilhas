@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Chatbot simples para organizar registros operacionais da May Artes 3D.">
     <title>Assistente de registros | May Artes 3D</title>
-    <link rel="stylesheet" href="{% static 'home/css/home.css' %}?v=13">
-    <script src="{% static 'home/js/home.js' %}?v=2" defer></script>
+    <link rel="stylesheet" href="{% static 'home/css/home.css' %}?v=16">
+    <script src="{% static 'home/js/home.js' %}?v=3" defer></script>
 </head>
 <body>
     <!-- Cabeçalho com a marca e atalhos para as áreas principais da página. -->
@@ -17,8 +17,8 @@
             <span>May Artes 3D <small>Assistente de registros</small></span>
         </a>
         <nav aria-label="Navegação principal">
-            <a href="#chat">Chatbot</a>
-            <a href="#contato">Contato</a>
+            <a href="#empresa">Empresa</a>
+            <a href="#chat">Assistente</a>
         </nav>
     </header>
 
@@ -35,10 +35,10 @@
         </div>
     </section>
 
-    <section class="product-gallery" aria-label="Produtos em destaque">
+    <section class="product-gallery" id="produtos" aria-label="Produtos em destaque">
         <div class="product-gallery-heading">
             <h2>Produtos</h2>
-            <p>Action figures de anime da melhor qualidade, feitas com carinho para você.</p>
+            <p>Action figures de cultura pop da melhor qualidade, feitas com carinho para você.</p>
         </div>
         <article class="product-card">
             <img src="{% static 'home/img/silksong.webp' %}" alt="Diorama de Hollow Knight: Silksong">
@@ -93,11 +93,11 @@
 
             <aside class="guide-card">
                 <p class="eyebrow">FLUXO DA CONVERSA</p>
-                <h2>Simples assim</h2>
+                <h2>O que você pode fazer</h2>
                 <ol class="steps">
-                    <li><span>1</span><div><strong>Escolha um tema</strong><small>Pedidos, vendas, produtos, estoque ou eventos.</small></div></li>
-                    <li><span>2</span><div><strong>Responda às perguntas</strong><small>O assistente pergunta os campos necessários.</small></div></li>
-                    <li><span>3</span><div><strong>Continue ou edite</strong><small>Adicione outros registros ou altere os existentes.</small></div></li>
+                    <li><span>1</span><div><strong>Escolha uma opção</strong><small>Saiba quem somos, crie uma planilha ou veja como entrar em contato.</small></div></li>
+                    <li><span>2</span><div><strong>Siga o caminho</strong><small>Consulte informações da empresa ou escolha um tema e responda às perguntas.</small></div></li>
+                    <li><span>3</span><div><strong>Explore outras opções</strong><small>Veja os produtos, acesse o Instagram ou use “Mais opções” para consultar e editar planilhas.</small></div></li>
                 </ol>
                 <div class="privacy-note">
                     <strong>Dica de privacidade</strong>
@@ -161,10 +161,31 @@
     </main>
 
     <footer class="site-footer">
-        <p class="footer-brand">May Artes 3D — Colecionáveis • Geek • Games</p>
-        <div class="footer-contact" id="contato">
-            <span>📍 São Paulo/SP</span>
-            <a href="https://www.instagram.com/may_artes3d/" target="_blank" rel="noopener noreferrer">📸 Instagram: @may_artes3d</a>
+        <div class="footer-columns">
+            <section class="footer-column" id="empresa" aria-labelledby="footer-company-heading">
+                <h2 id="footer-company-heading">MAY ARTES 3D</h2>
+                <p id="footer-company-description">Manufatura aditiva e comércio de produtos confeccionados por impressão 3D, com peças colecionáveis e itens dos universos geek, gamer e otaku.</p>
+            </section>
+            <section class="footer-column" aria-labelledby="footer-details-heading">
+                <h2 id="footer-details-heading">DADOS DA EMPRESA</h2>
+                <p><strong>Razão social</strong><br><span id="footer-company-legal-name">MAY ARTES 3D COMERCIO LTDA</span></p>
+                <p><strong>CNPJ</strong><br><span id="footer-company-cnpj">61.691.386/0001-10</span></p>
+                <p><strong>Representante</strong><br><span id="footer-company-representative">Elma Castilho</span></p>
+                <p><strong>CPF do representante</strong><br><span id="footer-company-cpf">Não informado</span></p>
+            </section>
+            <section class="footer-column" aria-labelledby="footer-location-heading">
+                <h2 id="footer-location-heading">LOCALIZAÇÃO</h2>
+                <p id="footer-company-address">Rua Guarairas, nº 78</p>
+                <p id="footer-company-city">São Paulo/SP</p>
+            </section>
+            <section class="footer-column" id="contato" aria-labelledby="footer-contact-heading">
+                <h2 id="footer-contact-heading">ACOMPANHE</h2>
+                <a id="footer-company-instagram" href="https://www.instagram.com/may_artes3d/" target="_blank" rel="noopener noreferrer">Instagram @may_artes3d</a>
+            </section>
+        </div>
+        <div class="footer-bottom">
+            <span>MAY ARTES 3D COMERCIO LTDA</span>
+            <span>São Paulo/SP</span>
         </div>
     </footer>
 
